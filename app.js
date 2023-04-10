@@ -34,7 +34,7 @@ const userSchema = new mongoose.Schema ({
     password : String,
     googleId: String,
     facebookId: String,
-    secret: Array
+    secret: String
 });
 
 userSchema.plugin(passportLocalMongoose);
@@ -122,18 +122,17 @@ app.get("/register", function(req, res){
 });
 
 app.get("/secrets", function(req, res){
-    User.find({secret:{$ne:null}})
-        .then(users => {
-            if (users) {
-                res.render("secrets", {usersWithSecrets:users});
-            } else {
-                console.log("No users found");
+    User.find({"secret": {$ne: null}})
+        .then(foundUsers => {
+            if (foundUsers) {
+                res.render("secrets", {usersWithSecrets: foundUsers});
             }
         })
         .catch(err => {
             console.log(err);
         });
 });
+
 
 
 
@@ -145,27 +144,26 @@ app.get("/submit", function(req, res){
     }
 });
 
-app.post("/submit", function (req, res){
-    if (req.isAuthenticated()){
-        User.findById(req.user.id)
-            .then(user => {
-                if (user){
-                    user.secret.push(req.body.secret);
-                    return user.save();
-                } else {
-                    console.log("User not found");
-                }
-            })
-            .then(() => {
-                res.redirect("/secrets");
-            })
-            .catch(err => {
-                console.log(err);
-            });
-    } else {
-        res.redirect("/login");
-    }
+app.post("/submit", function(req, res){
+    const submittedSecret = req.body.secret;
+
+    console.log(req.user.id);
+
+    User.findById(req.user.id)
+        .then(foundUser => {
+            if (foundUser) {
+                foundUser.secret = submittedSecret;
+                return foundUser.save();
+            }
+        })
+        .then(() => {
+            res.redirect("/secrets");
+        })
+        .catch(err => {
+            console.log(err);
+        });
 });
+
 
 
 
